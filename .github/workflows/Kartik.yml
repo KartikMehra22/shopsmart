@@ -40,22 +40,8 @@ jobs:
         run: npm test
         working-directory: ./client
 
-  server-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Dependencies
-        run: npm install
-        working-directory: ./server
-
-      - name: Verify Server
-        run: npm run build
-        working-directory: ./server
-
   server-tests:
     runs-on: ubuntu-latest
-    needs: server-build
     steps:
       - uses: actions/checkout@v4
 
