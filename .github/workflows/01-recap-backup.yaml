@@ -1,0 +1,26 @@
+on:
+    workflow_dispatch:
+        inputs:
+            name:
+                description: "Name"
+                required: true
+                default: "John Doe"
+            city:
+                description: "City"
+                required: true
+                default: "New York"
+            age:
+                description: "Age"
+                required: true
+                default: "30"
+            isStudent:
+                description: "Is Student?"
+                required: true
+                default: "false"
+
+jobs:
+    hello:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Hello
+              run: echo "Hello World"
