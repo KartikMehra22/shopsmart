@@ -1,26 +1,23 @@
+name: Hello World
+
 on:
+    push:
     workflow_dispatch:
-        inputs:
-            name:
-                description: "Name"
-                required: true
-                default: "John Doe"
-            city:
-                description: "City"
-                required: true
-                default: "New York"
-            age:
-                description: "Age"
-                required: true
-                default: "30"
-            isStudent:
-                description: "Is Student?"
-                required: true
-                default: "false"
+      inputs:
+        name:
+          description: "Name to greet"
+          required: true
+          default: "NST"
 
 jobs:
-    hello:
+    hello-world:
         runs-on: ubuntu-latest
         steps:
-            - name: Hello
-              run: echo "Hello World"
+            - name: Say Hello
+              run: echo "Hello ${{ github.event.inputs.name }}!"
+            - name: List Files
+              run: ls -la
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: List Files
+              run: ls -la
