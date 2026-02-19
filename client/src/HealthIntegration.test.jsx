@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { http, HttpResponse, delay } from 'msw';
 import { server } from './mocks/server';
 
