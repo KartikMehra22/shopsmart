@@ -45,4 +45,21 @@ test.describe('Health Check Status', () => {
         const statusText = page.locator('.status-ok');
         await expect(statusText).toBeVisible({ timeout: 5000 });
     });
+
+    test('should remain in loading state when API returns 500 error', async ({ page }) => {
+        // Mock the backend API with a 500 error
+        await page.route('**/api/health', async route => {
+            await route.fulfill({ status: 500 });
+        });
+
+        // Navigate to the app
+        await page.goto('/');
+
+        // Assert that the loading message is visible
+        await expect(page.getByText('Loading backend status...')).toBeVisible();
+
+        // Ensure the status text never appears
+        const statusText = page.locator('.status-ok');
+        await expect(statusText).not.toBeVisible({ timeout: 2000 });
+    });
 });
