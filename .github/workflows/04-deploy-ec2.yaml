@@ -13,17 +13,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check Configuration
+        run: |
+          if [ -z "${{ secrets.EC2_HOST || vars.EC2_HOST }}" ]; then
+            echo "::warning::EC2_HOST is not set (check Secrets or Variables)"
+          fi
+          if [ -z "${{ secrets.EC2_USERNAME || vars.EC2_USERNAME }}" ]; then
+            echo "::info::EC2_USERNAME is not set, defaulting to 'ubuntu'"
+          fi
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "::error::EC2_SSH_KEY is missing from Secrets!"
+          fi
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.5
         with:
-          # CRITICAL: These secrets must be defined in your GitHub Repository settings:
-          # Settings > Secrets and variables > Actions
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          # Supports both Secrets and Variables for host/username
+          host: ${{ secrets.EC2_HOST || vars.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME || vars.EC2_USERNAME || 'ubuntu' }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Define deployment target directory
-            DEPLOY_PATH="/home/${{ secrets.EC2_USERNAME }}/shopsmart"
+            # Use HOME directory for consistency
+            DEPLOY_PATH="$HOME/shopsmart"
             
             # Ensure target directory exists
             mkdir -p $DEPLOY_PATH
