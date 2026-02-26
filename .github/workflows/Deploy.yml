@@ -1,0 +1,73 @@
+name: Deploy Static HTML to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Image.html to Nginx on EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout the repository ───────────────────────────────────────
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ── 2. Validate required secrets are present ──────────────────────────
+      - name: Validate Secrets
+        run: |
+          if [ -z "${{ secrets.EC2_HOST }}" ]; then
+            echo "::error::EC2_HOST secret is missing — add it in Settings → Secrets → Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "::error::EC2_SSH_KEY secret is missing — paste the full .pem file content"
+            exit 1
+          fi
+          echo "✅ All required secrets are present."
+
+      # ── 3. Copy Image.html to EC2 via SCP ────────────────────────────────
+      - name: Copy HTML File to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "Image.html"
+          target: "/tmp/"
+
+      # ── 4. SSH into EC2 and move file to Nginx web root ──────────────────
+      - name: Deploy to Nginx Web Root
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            # Ensure Nginx is installed and running
+            if ! command -v nginx &> /dev/null; then
+              echo "Installing Nginx..."
+              sudo apt-get update -y
+              sudo apt-get install -y nginx
+            fi
+
+            sudo systemctl enable nginx
+            sudo systemctl start nginx
+
+            # Move the HTML file into the Nginx default web root
+            sudo mv /tmp/Image.html /var/www/html/Image.html
+
+            # Fix ownership and permissions
+            sudo chown www-data:www-data /var/www/html/Image.html
+            sudo chmod 644 /var/www/html/Image.html
+
+            # Reload Nginx to pick up any config changes (non-disruptive)
+            sudo systemctl reload nginx
+
+            echo "✅ Deployment complete!"
+            echo "🌐 Access at: http://${{ secrets.EC2_HOST }}/Image.html"
