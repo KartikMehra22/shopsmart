@@ -34,6 +34,7 @@ jobs:
 
       # ── 3. Copy Image.html to EC2 via SCP ────────────────────────────────
       - name: Copy HTML File to EC2
+        if: steps.check_secrets.outputs.skip == 'false'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -44,6 +45,7 @@ jobs:
 
       # ── 4. SSH into EC2 and move file to Nginx web root ──────────────────
       - name: Deploy to Nginx Web Root
+        if: steps.check_secrets.outputs.skip == 'false'
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
