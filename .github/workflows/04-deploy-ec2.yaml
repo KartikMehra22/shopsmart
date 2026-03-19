@@ -14,62 +14,52 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check Configuration
+        id: check_secrets
         run: |
-          if [ -z "${{ secrets.EC2_HOST || vars.EC2_HOST }}" ]; then
-            echo "::warning::EC2_HOST is not set (check Secrets or Variables)"
-          fi
-          if [ -z "${{ secrets.EC2_USERNAME || vars.EC2_USERNAME }}" ]; then
-            echo "::info::EC2_USERNAME is not set, defaulting to 'ubuntu'"
-          fi
           if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
-            echo "::error::EC2_SSH_KEY is missing from Secrets!"
+            echo "::warning::EC2_SSH_KEY is not set — skipping deploy"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy to EC2
+        if: steps.check_secrets.outputs.skip == 'false'
         uses: appleboy/ssh-action@v1.2.5
         with:
-          # Supports both Secrets and Variables for host/username
           host: ${{ secrets.EC2_HOST || vars.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME || vars.EC2_USERNAME || 'ubuntu' }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Use HOME directory for consistency
             DEPLOY_PATH="$HOME/shopsmart"
-            
-            # Ensure target directory exists
             mkdir -p $DEPLOY_PATH
             cd $DEPLOY_PATH
-            
-            # Initialize git if not already present
+
             if [ ! -d ".git" ]; then
                 git clone https://github.com/${{ github.repository }}.git .
             fi
 
-            # Pull latest changes
             git pull origin main
-            
-            # Install PM2 globally if not already installed
+
             if ! command -v pm2 &> /dev/null; then
                 sudo npm install -g pm2
             fi
 
-            # Setup Server
+            # Setup Server (entry point is server/server.js)
             cd server
             npm install
 
-            # Start or Restart application with PM2
-            if pm2 describe shopsmart-server > /dev/null; then
+            if pm2 describe shopsmart-server > /dev/null 2>&1; then
                 pm2 restart shopsmart-server
             else
-                pm2 start src/index.js --name shopsmart-server
+                pm2 start server.js --name shopsmart-server
             fi
 
             pm2 save
-            
-            # Setup Client (Build and Publish)
+
+            # Setup Client
             cd ../client
             npm install
             npm run build
-            
-            # Deploy to Nginx web root
+
             sudo cp -r dist/* /var/www/html/

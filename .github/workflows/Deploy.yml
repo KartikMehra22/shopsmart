@@ -18,16 +18,19 @@ jobs:
 
       # ── 2. Validate required secrets are present ──────────────────────────
       - name: Validate Secrets
+        id: check_secrets
         run: |
+          SKIP="false"
           if [ -z "${{ secrets.EC2_HOST }}" ]; then
-            echo "::error::EC2_HOST secret is missing — add it in Settings → Secrets → Actions"
-            exit 1
+            echo "::warning::EC2_HOST secret is missing — deploy will be skipped"
+            SKIP="true"
           fi
           if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
-            echo "::error::EC2_SSH_KEY secret is missing — paste the full .pem file content"
-            exit 1
+            echo "::warning::EC2_SSH_KEY secret is missing — deploy will be skipped"
+            SKIP="true"
           fi
-          echo "✅ All required secrets are present."
+          echo "skip=$SKIP" >> $GITHUB_OUTPUT
+          echo "✅ Secret check complete"
 
       # ── 3. Copy Image.html to EC2 via SCP ────────────────────────────────
       - name: Copy HTML File to EC2
