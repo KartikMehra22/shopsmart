@@ -54,7 +54,10 @@ jobs:
           ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies
-      run: pnpm install
+      run: |
+        pnpm install
+        cd client && pnpm install
+        cd ../server && pnpm install
 
     - name: Lint Frontend
       working-directory: ./client
