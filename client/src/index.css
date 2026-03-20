@@ -565,6 +565,27 @@ a {
   color: #e05c5c;
 }
 
+/* ── Status Bar ── */
+.status-bar {
+  padding: 12px 48px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.status-msg {
+  color: var(--white-30);
+}
+.status-msg.error {
+  color: #ff5f5f;
+}
+.status-msg.success {
+  color: #00ff88;
+}
+
 /* ══════════════════════════════════
    FOOTER
 ══════════════════════════════════ */

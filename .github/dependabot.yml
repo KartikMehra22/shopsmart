@@ -4,10 +4,18 @@ updates:
     directory: '/client'
     schedule:
       interval: 'weekly'
+    groups:
+      dependencies:
+        patterns:
+          - '*'
   - package-ecosystem: 'npm'
     directory: '/server'
     schedule:
       interval: 'weekly'
+    groups:
+      dependencies:
+        patterns:
+          - '*'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:

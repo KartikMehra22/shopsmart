@@ -228,8 +228,15 @@ export default function App() {
 
       <Hero />
 
-      {loading && <p className="state-msg">Loading products…</p>}
-      {error && <p className="state-msg error">{error}</p>}
+      <div className="status-bar">
+        {loading && <span className="status-msg">Checking System...</span>}
+        {error && (
+          <span className="status-msg error">⚠️ System Offline: {error}</span>
+        )}
+        {!loading && !error && (
+          <span className="status-msg success">● System Online</span>
+        )}
+      </div>
 
       {!loading && !error && (
         <>
