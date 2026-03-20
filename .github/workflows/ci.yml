@@ -2,57 +2,60 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   client:
     name: Client (Frontend)
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         working-directory: ./client
-    
+
     strategy:
       matrix:
         node-version: [18.x]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: './client/package-lock.json'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Run formatting check
+        run: npm run format:check
+
       - name: Run linter
         run: npm run lint
-      
+
       - name: Run tests
         run: npm run test -- --run
-      
+
       - name: E2E Tests
         run: npx playwright test e2e/
         working-directory: .
-      
+
       - name: Docker Build Check
         run: |
           docker build -t shopsmart-client ./client
           docker build -t shopsmart-server ./server
         working-directory: .
-      
+
       - name: Build application
         run: npm run build
-      
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -63,31 +66,31 @@ jobs:
   server:
     name: Server (Backend)
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         working-directory: ./server
-    
+
     strategy:
       matrix:
         node-version: [18.x]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: './server/package-lock.json'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      
+
       - name: Run tests
         run: npm run test

@@ -1,14 +1,14 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/client"
+  - package-ecosystem: 'npm'
+    directory: '/client'
     schedule:
-      interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "/server"
+      interval: 'weekly'
+  - package-ecosystem: 'npm'
+    directory: '/server'
     schedule:
-      interval: "weekly"
-  - package-ecosystem: "github-actions"
-    directory: "/"
+      interval: 'weekly'
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'

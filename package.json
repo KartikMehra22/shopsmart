@@ -9,6 +9,14 @@
     "webhooks": "node webhooks/index.js",
     "dev": "npm run server & npm run client",
     "docker:build": "docker-compose build",
-    "docker:up": "docker-compose up"
+    "docker:up": "docker-compose up",
+    "lint": "npm run lint --prefix client && npm run lint --prefix server",
+    "test": "npm run test --prefix client -- --run && npm run test --prefix server",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1"
   }
 }

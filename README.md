@@ -5,6 +5,7 @@ ShopSmart is a premium, minimalist e-commerce platform built with React, Express
 ## Architecture & Design Decisions
 
 ### Infrastructure & Modules
+
 - **Docker**: Full containerization with `Dockerfile`s for client/server and `docker-compose.yml`.
 - **Github_to_AWS**: Static deployment modules for AWS EC2.
 - **lab4**: Performance and health check scripts for EC2.
@@ -12,6 +13,7 @@ ShopSmart is a premium, minimalist e-commerce platform built with React, Express
 - **webhooks**: Demo webhook server for event-driven workflows.
 
 ## Directory Structure
+
 ```
 .
 ├── .github/workflows/  # CI/CD Workflows
@@ -27,18 +29,21 @@ ShopSmart is a premium, minimalist e-commerce platform built with React, Express
 ## How to Run
 
 ### Docker (Recommended)
+
 ```bash
 npm run docker:build
 npm run docker:up
 ```
 
 ### Local Development
+
 ```bash
 npm run setup
 npm run dev
 ```
 
 ### Testing
+
 ```bash
 # Unit/Integration
 npm test

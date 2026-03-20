@@ -6,7 +6,7 @@ function startService(name, dir, command, args) {
   const process = spawn(command, args, {
     cwd: path.join(__dirname, dir),
     shell: true,
-    stdio: 'inherit'
+    stdio: 'inherit',
   });
 
   process.on('error', (err) => {
