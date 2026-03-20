@@ -18,6 +18,6 @@ jobs:
             - name: List Files
               run: ls -la
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
             - name: List Files
               run: ls -la
