@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 echo "Starting project setup..."
@@ -7,9 +8,9 @@ if [ -d "server/node_modules" ]; then
   echo "Backend dependencies already installed."
 else
   echo "Installing backend dependencies..."
-  npm install --prefix server
+  cd server && pnpm install
   if [ $? -ne 0 ]; then
-    echo "Backend npm install failed."
+    echo "Backend pnpm install failed."
     exit 1
   fi
 fi
@@ -19,9 +20,9 @@ if [ -d "client/node_modules" ]; then
   echo "Frontend dependencies already installed."
 else
   echo "Installing frontend dependencies..."
-  npm install --prefix client
+  cd client && pnpm install
   if [ $? -ne 0 ]; then
-    echo "Frontend npm install failed."
+    echo "Frontend pnpm install failed."
     exit 1
   fi
 fi

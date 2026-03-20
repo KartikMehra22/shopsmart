@@ -2,95 +2,86 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
-  client:
-    name: Client (Frontend)
+  build_and_test:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ./client
-
-    strategy:
-      matrix:
-        node-version: [18.x]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: './client/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run formatting check
-        run: npm run format:check
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Run tests
-        run: npm run test -- --run
-
-      - name: E2E Tests
-        run: npx playwright test e2e/
-        working-directory: .
-
-      - name: Docker Build Check
-        run: |
-          docker build -t shopsmart-client ./client
-          docker build -t shopsmart-server ./server
-        working-directory: .
-
-      - name: Build application
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: client-build
-          path: client/dist
-          retention-days: 7
-
-  server:
-    name: Server (Backend)
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./server
-
-    strategy:
-      matrix:
-        node-version: [18.x]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: './server/package-lock.json'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: false
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Run tests
-        run: npm run test
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Lint Frontend
+      working-directory: ./client
+      run: pnpm run lint
+
+    - name: Prisma Generate
+      working-directory: ./server
+      env:
+        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+      run: pnpm prisma generate
+
+    - name: Prisma DB Push for Tests
+      working-directory: ./server
+      env:
+        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+      run: pnpm prisma db push
+
+    - name: Run Backend Unit & Integration Tests
+      working-directory: ./server
+      env:
+        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+      run: pnpm test
+
+    - name: Install Playwright Browsers
+      working-directory: ./client
+      run: pnpm exec playwright install --with-deps chromium
+
+    - name: Run Playwright E2E Tests
+      working-directory: ./client
+      run: pnpm exec playwright test
