@@ -1,73 +1,82 @@
 #!/bin/bash
-# Idempotent Deployment Script for ShopSmart
-# This script can be run safely multiple times without causing errors or duplicating processes.
+set -e
 
-# Load nvm and use correct Node version
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use default
 
-set -e # Exit on any error
+# use default node if available
+nvm use default || true
 
 APP_DIR="$HOME/shopsmart"
+REPO_URL="https://github.com/KartikMehra22/shopsmart.git"
 
-# 1. Idempotent Directory Creation
-echo "=> Ensuring application directories exist..."
-mkdir -p "$APP_DIR/logs"
+echo "=> Ensuring app directory exists..."
 
-# 2. Navigate to app directory
-cd "$APP_DIR" || exit 1
+# Clone repo if missing
+if [ ! -d "$APP_DIR" ]; then
+  echo "=> Repo not found. Cloning fresh copy..."
+  git clone "$REPO_URL" "$APP_DIR"
+fi
 
-# 3. Pull latest changes (assuming git is already initialized)
-echo "=> Pulling latest changes from main branch..."
-git pull origin main || echo "Git pull failed, continuing local deployment..."
+cd "$APP_DIR"
 
-# 4. Install dependencies securely based on lockfile
-echo "=> Installing dependencies..."
+# If folder exists but git is broken, re-clone
+if [ ! -d ".git" ]; then
+  echo "=> .git folder missing. Re-cloning repository..."
+  cd "$HOME"
+  rm -rf "$APP_DIR"
+  git clone "$REPO_URL" "$APP_DIR"
+  cd "$APP_DIR"
+fi
+
+echo "=> Pulling latest changes..."
+git fetch origin
+git reset --hard origin/main
+
+echo "=> Creating logs directory..."
+mkdir -p logs
+
+echo "=> Installing root dependencies..."
 pnpm install --frozen-lockfile
 
-# 5. Database Setup (Idempotent push/migrate)
+echo "=> Installing server dependencies..."
+cd server
+pnpm install --frozen-lockfile
+
 echo "=> Syncing database schema..."
-cd server
 pnpm prisma db push --accept-data-loss
-cd ..
 
-# 6. Build Frontend
-echo "=> Building Next.js application..."
-cd client
-pnpm build
-cd ..
-
-# 7. Restart Backend Service (Idempotent PM2 or kill-start logic)
-echo "=> Restarting Backend Service..."
-cd server
+echo "=> Restarting backend..."
 if lsof -Pi :5001 -sTCP:LISTEN -t >/dev/null ; then
-    echo "Port 5001 in use. Killing existing backend process safely..."
-    lsof -ti :5001 | xargs kill -15
-    sleep 2 # Wait for graceful shutdown
+  lsof -ti :5001 | xargs kill -15 || true
+  sleep 2
 fi
 
-# Ensure it actually stopped, force kill if needed
 if lsof -Pi :5001 -sTCP:LISTEN -t >/dev/null ; then
-    lsof -ti :5001 | xargs kill -9
+  lsof -ti :5001 | xargs kill -9 || true
 fi
 
-# Start the server in the background and pipe logs
 nohup pnpm start > ../logs/server.log 2>&1 &
-echo "=> Backend started on port 5001."
 cd ..
 
-# 8. Restart Frontend Service
-echo "=> Restarting Frontend Service..."
+echo "=> Installing client dependencies..."
 cd client
+pnpm install --frozen-lockfile
+
+echo "=> Building frontend..."
+pnpm build
+
+echo "=> Restarting frontend..."
 if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null ; then
-    echo "Port 3000 in use. Killing existing frontend process safely..."
-    lsof -ti :3000 | xargs kill -15
-    sleep 2
+  lsof -ti :3000 | xargs kill -15 || true
+  sleep 2
+fi
+
+if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null ; then
+  lsof -ti :3000 | xargs kill -9 || true
 fi
 
 nohup pnpm start > ../logs/client.log 2>&1 &
-echo "=> Frontend started on port 3000."
 cd ..
 
 echo "=> Deployment completed successfully!"

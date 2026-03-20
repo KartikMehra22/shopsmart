@@ -2,7 +2,7 @@ name: Deploy to AWS EC2
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -10,39 +10,71 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Get EC2 IP Address
-      id: get-ip
-      run: |
-        IP=$(aws ec2 describe-instances --instance-ids i-0dc10b39da8b76391 --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
-        if [ "$IP" == "None" ] || [ -z "$IP" ]; then
-          echo "Failed to get EC2 IP. Make sure the instance is running."
-          exit 1
-        fi
-        echo "EC2_IP=$IP" >> $GITHUB_ENV
+      - name: Get EC2 IP Address
+        run: |
+          IP=$(aws ec2 describe-instances \
+            --instance-ids i-0dc10b39da8b76391 \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
 
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.2.5
-      with:
-        host: ${{ env.EC2_IP }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        envs: DATABASE_URL,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_REGION,HELLO
-        script: |
-          cd ~/shopsmart
-          git pull origin main
-          bash scripts/deploy.sh
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        HELLO: ${{ secrets.HELLO }}
+          if [ "$IP" = "None" ] || [ -z "$IP" ]; then
+            echo "Failed to get EC2 IP. Make sure the instance is running."
+            exit 1
+          fi
+
+          echo "EC2_IP=$IP" >> $GITHUB_ENV
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          HELLO: ${{ secrets.HELLO }}
+        with:
+          host: ${{ env.EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DATABASE_URL,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_REGION,HELLO
+          script: |
+            set -e
+
+            APP_DIR="$HOME/shopsmart"
+            REPO_URL="https://github.com/KartikMehra22/shopsmart.git"
+
+            echo "=> Checking repo directory..."
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "=> Repo missing or invalid. Re-cloning..."
+              rm -rf "$APP_DIR"
+              git clone "$REPO_URL" "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+
+            echo "=> Syncing latest code..."
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "=> Writing server environment file..."
+            mkdir -p server
+            cat > server/.env <<EOF
+            DATABASE_URL=$DATABASE_URL
+            AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN
+            AWS_REGION=$AWS_REGION
+            HELLO=$HELLO
+            EOF
+
+            chmod +x scripts/deploy.sh
+            bash scripts/deploy.sh
