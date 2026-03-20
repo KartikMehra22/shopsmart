@@ -42,11 +42,13 @@ jobs:
       
       - name: E2E Tests
         run: npx playwright test e2e/
+        working-directory: .
       
       - name: Docker Build Check
         run: |
           docker build -t shopsmart-client ./client
           docker build -t shopsmart-server ./server
+        working-directory: .
       
       - name: Build application
         run: npm run build
@@ -83,6 +85,9 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+      
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
       
       - name: Run tests
         run: npm run test
