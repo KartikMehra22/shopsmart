@@ -20,6 +20,13 @@ app.get('/api/categories', async (req, res) => {
   res.json(categories);
 });
 
+// Parity routes (baseline implementations)
+app.get('/api/users',    (req, res) => res.json({ message: 'Users endpoint (Mock)' }));
+app.get('/api/cart',     (req, res) => res.json({ items: [], total: 0 }));
+app.get('/api/orders',   (req, res) => res.json({ orders: [] }));
+app.get('/api/reviews',  (req, res) => res.json({ reviews: [] }));
+app.get('/api/admin',    (req, res) => res.status(403).json({ error: 'Unauthorized' }));
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => console.log(`Backend running at http://localhost:${PORT}`));
 }
