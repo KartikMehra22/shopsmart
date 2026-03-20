@@ -8,14 +8,30 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Only run deploy if tests pass. This depends on your workflow structure
-    # needs: build_and_test
 
     steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Get EC2 IP Address
+      id: get-ip
+      run: |
+        IP=$(aws ec2 describe-instances --instance-ids i-0dc10b39da8b76391 --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+        if [ "$IP" == "None" ] || [ -z "$IP" ]; then
+          echo "Failed to get EC2 IP. Make sure the instance is running."
+          exit 1
+        fi
+        echo "EC2_IP=$IP" >> $GITHUB_ENV
+
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v1.2.5
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ env.EC2_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         envs: DATABASE_URL,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_REGION,HELLO
