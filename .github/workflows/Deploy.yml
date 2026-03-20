@@ -35,7 +35,7 @@ jobs:
       # ── 3. Copy Image.html to EC2 via SCP ────────────────────────────────
       - name: Copy HTML File to EC2
         if: steps.check_secrets.outputs.skip == 'false'
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
