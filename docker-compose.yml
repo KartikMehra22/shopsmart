@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  database:
+    image: alpine:latest
+    volumes:
+      - ./server/prisma/dev.db:/app/prisma/dev.db
+    # Simple placeholder as we use SQLite file directly
+  
+  server:
+    build: ./server
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=file:./prisma/dev.db
+    volumes:
+      - ./server/prisma:/app/prisma
+
+  client:
+    build: ./client
+    ports:
+      - "80:80"
+    depends_on:
+      - server
