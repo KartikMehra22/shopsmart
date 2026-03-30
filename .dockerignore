@@ -1,0 +1,12 @@
+node_modules
+dist
+build
+.git
+.github
+*.log
+.env
+server/prisma/dev.db
+server/prisma/dev.db-journal
+client/node_modules
+server/node_modules
+pnpm-debug.log

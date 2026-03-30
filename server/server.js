@@ -9,8 +9,11 @@ app.use(express.json());
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-app.get('/', (req, res) => res.send('ShopSmart API'));
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 app.get('/api/products', async (req, res) => {
   const products = await prisma.product.findMany();
   res.json(products);

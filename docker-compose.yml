@@ -1,23 +1,31 @@
-version: '3.8'
 services:
-  database:
-    image: alpine:latest
-    volumes:
-      - ./server/prisma/dev.db:/app/prisma/dev.db
-    # Simple placeholder as we use SQLite file directly
-
   server:
-    build: ./server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
     ports:
-      - '5000:5000'
+      - '5001:5001'
     environment:
       - DATABASE_URL=file:./prisma/dev.db
+      - NODE_ENV=development
     volumes:
-      - ./server/prisma:/app/prisma
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - shopsmart-net
 
   client:
-    build: ./client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
     ports:
-      - '80:80'
+      - '3000:80'
     depends_on:
       - server
+    networks:
+      - shopsmart-net
+
+networks:
+  shopsmart-net:
+    driver: bridge
+
