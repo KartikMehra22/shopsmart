@@ -2,89 +2,68 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
-        run_install: false
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
 
-    - name: Get pnpm store directory
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-    - name: Setup pnpm cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-    - name: Install dependencies
-      run: |
-        pnpm install
-        cd client && pnpm install
-        cd ../server && pnpm install
+      - name: Install dependencies
+        run: |
+          pnpm install
+          cd client && pnpm install
+          cd ../server && pnpm install
 
-    - name: Lint Frontend
-      working-directory: ./client
-      run: pnpm run lint
+      - name: Lint Frontend
+        working-directory: ./client
+        run: pnpm run lint
 
-    - name: Prisma Generate
-      working-directory: ./server
-      env:
-        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-      run: pnpm prisma generate
+      - name: Prepare CI SQLite database
+        working-directory: ./server
+        env:
+          DATABASE_URL: file:./prisma/ci.db
+        run: |
+          rm -f prisma/ci.db prisma/ci.db-journal
+          pnpm prisma migrate deploy
+          pnpm prisma db seed
 
-    - name: Prisma DB Push for Tests
-      working-directory: ./server
-      env:
-        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-      run: pnpm prisma db push
+      - name: Run Backend Unit & Integration Tests
+        working-directory: ./server
+        env:
+          DATABASE_URL: file:./prisma/ci.db
+        run: pnpm test
 
-    - name: Run Backend Unit & Integration Tests
-      working-directory: ./server
-      env:
-        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-      run: pnpm test
-
-    - name: Install Playwright Browsers
-      working-directory: ./client
-      run: pnpm exec playwright install --with-deps chromium
-
-    - name: Run Playwright E2E Tests
-      working-directory: ./client
-      run: pnpm exec playwright test
+      - name: Run E2E tests
+        env:
+          CI: true
+        run: npx playwright install --with-deps && npx playwright test e2e/
