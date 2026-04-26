@@ -1,15 +1,15 @@
 services:
   server:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile
     ports:
       - '5001:5001'
     env_file:
       - .env
-    environment:
-      NODE_ENV: production
-    restart: unless-stopped
+    volumes:
+      - ./server:/app
+      - /app/node_modules
     networks:
       - shopsmart-net
 
@@ -19,13 +19,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3000:80'
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
     depends_on:
       - server
-    restart: unless-stopped
     networks:
       - shopsmart-net
 
