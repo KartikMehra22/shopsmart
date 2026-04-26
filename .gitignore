@@ -1,7 +1,14 @@
 node_modules
 .DS_Store
 .env
+package-lock.json
+server/prisma/test-e2e.db
+server/prisma/test-e2e.db-journal
+server/prisma/ci.db
+server/prisma/ci.db-journal
 dist
 build
 coverage
 .vercel
+test-results/
+playwright-report/
