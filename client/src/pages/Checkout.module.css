@@ -1,0 +1,22 @@
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6);
+}
+
+.title {
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-4);
+}
+
+.text {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-6);
+}
+
+.link {
+  color: var(--color-text-brand);
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+}

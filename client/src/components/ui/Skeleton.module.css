@@ -1,0 +1,31 @@
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-muted) 0%,
+    var(--color-bg-overlay) 45%,
+    var(--color-bg-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.text {
+  height: 1em;
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.rect {
+  border-radius: var(--radius-md);
+}
+
+.circle {
+  border-radius: var(--radius-full);
+}
+
+.card {
+  border-radius: var(--radius-lg);
+  min-height: 200px;
+}
