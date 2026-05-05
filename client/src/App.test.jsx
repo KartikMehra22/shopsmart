@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 
 describe('App Component', () => {
-  it('renders the ShopSmart logo', () => {
+  it('renders the ShopSmart brand', async () => {
     render(<App />);
-    const logoElements = screen.getAllByText(/SHOPSMART/i);
-    expect(logoElements.length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ShopSmart/i).length).toBeGreaterThan(0);
   });
 
-  it('renders the hero headline', () => {
+  it('renders the hero headline after the home page loads', async () => {
     render(<App />);
-    const headline = screen.getByText(/Craft your/i);
-    expect(headline).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Shop Without Limits/i })).toBeInTheDocument();
+    });
   });
 });

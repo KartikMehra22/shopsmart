@@ -1,0 +1,43 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.sm {
+  font-size: var(--text-xs);
+  padding: 2px var(--space-2);
+}
+.md {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
+}
+
+.default {
+  background: color-mix(in srgb, var(--color-text-secondary) 18%, transparent);
+  color: var(--color-text-secondary);
+}
+.success {
+  background: color-mix(in srgb, var(--color-text-success) 18%, transparent);
+  color: var(--color-text-success);
+}
+.warning {
+  background: color-mix(in srgb, var(--color-text-warning) 18%, transparent);
+  color: var(--color-text-warning);
+}
+.danger {
+  background: var(--color-badge-sale-bg);
+  color: var(--color-text-danger);
+}
+.info {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+.brand {
+  background: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+  color: var(--color-text-brand);
+}

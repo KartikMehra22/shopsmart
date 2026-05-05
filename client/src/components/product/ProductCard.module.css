@@ -1,0 +1,201 @@
+.wrap {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.imgArea {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+}
+
+.imgStack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition:
+    opacity 220ms ease,
+    transform 400ms ease,
+    filter 400ms ease;
+}
+
+.imgLoaded {
+  opacity: 1;
+}
+
+.wrap:hover .img,
+.wrap:focus-within .img {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.outOfStock .img {
+  filter: grayscale(1);
+}
+
+.overlayOos {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-bg-base) 55%, transparent);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+
+.badges {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  z-index: var(--z-raised);
+}
+
+.wishlist {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: var(--z-raised);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-bg-base) 65%, transparent);
+  color: var(--color-text-secondary);
+  transition:
+    color var(--transition-fast),
+    transform var(--transition-spring);
+}
+.wishlist:hover {
+  color: var(--color-text-brand);
+}
+.wishlistActive {
+  color: var(--color-text-brand);
+}
+.wishlistBounce {
+  animation: bounceIn 0.4s var(--transition-spring);
+}
+
+.body {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.brand {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.name {
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+  color: var(--color-star-fill);
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.price {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+}
+
+.was {
+  font-size: var(--text-sm);
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.ctaWrap {
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+
+.ctaDesktop {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base);
+}
+
+.wrap:hover .ctaDesktop,
+.wrap:focus-within .ctaDesktop {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ctaMobile {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 767px) {
+  .ctaDesktop {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+}
+
+.skelImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
