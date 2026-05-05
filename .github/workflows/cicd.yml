@@ -53,6 +53,10 @@ jobs:
       - name: Lint server
         run: pnpm -C server run lint
 
+      - name: Generate Prisma client
+        working-directory: server
+        run: pnpm prisma generate
+
       - name: Prepare CI SQLite database
         working-directory: server
         env:
