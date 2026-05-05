@@ -123,7 +123,7 @@ jobs:
 
       - name: terraform plan
         working-directory: infra
-        run: terraform plan -input=false -out=tfplan
+        run: terraform plan -input=false -var=use_lab_role=true -out=tfplan
 
       - name: Upload plan artifact
         if: always()
