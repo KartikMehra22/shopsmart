@@ -30,6 +30,10 @@ resource "aws_ecs_task_definition" "app" {
           protocol      = "tcp"
         }
       ]
+      environment = [
+        { name = "DATABASE_URL", value = "file:/app/server/prisma/prod.db" },
+        { name = "NODE_ENV", value = "production" }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
