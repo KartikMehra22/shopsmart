@@ -71,11 +71,11 @@ jobs:
         env:
           DATABASE_URL: file:./prisma/ci.db
           JEST_JUNIT_OUTPUT_FILE: ./junit.xml
-        run: pnpm test --ci --reporters=default --reporters=jest-junit
+        run: pnpm test -- --ci --reporters=default --reporters=jest-junit
 
       - name: Client tests (JUnit)
         working-directory: client
-        run: pnpm test --run --reporter=junit --outputFile=./junit.xml
+        run: pnpm test -- --run --reporter=junit --outputFile=./junit.xml
 
       - name: Upload JUnit reports
         if: always()
