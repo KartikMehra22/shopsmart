@@ -1,0 +1,238 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  TF_INPUT: '0'
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Get pnpm store
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          pnpm -C client install
+          pnpm -C server install
+
+      - name: Lint client
+        run: pnpm -C client run lint
+
+      - name: Lint server
+        run: pnpm -C server run lint
+
+      - name: Prepare CI SQLite database
+        working-directory: server
+        env:
+          DATABASE_URL: file:./prisma/ci.db
+        run: |
+          rm -f prisma/ci.db prisma/ci.db-journal
+          pnpm prisma migrate deploy
+          pnpm prisma db seed
+
+      - name: Server unit + integration tests (JUnit)
+        working-directory: server
+        env:
+          DATABASE_URL: file:./prisma/ci.db
+          JEST_JUNIT_OUTPUT_FILE: ./junit.xml
+        run: pnpm test --ci --reporters=default --reporters=jest-junit
+
+      - name: Client tests (JUnit)
+        working-directory: client
+        run: pnpm test --run --reporter=junit --outputFile=./junit.xml
+
+      - name: Upload JUnit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-reports
+          path: |
+            server/junit.xml
+            client/junit.xml
+
+  terraform:
+    name: Terraform
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      ecr_repository_url:     ${{ steps.tf_outputs.outputs.ecr_repository_url }}
+      ecs_cluster_name:       ${{ steps.tf_outputs.outputs.ecs_cluster_name }}
+      ecs_service_name:       ${{ steps.tf_outputs.outputs.ecs_service_name }}
+      task_definition_family: ${{ steps.tf_outputs.outputs.task_definition_family }}
+      s3_bucket_name:         ${{ steps.tf_outputs.outputs.s3_bucket_name }}
+      alb_dns_name:           ${{ steps.tf_outputs.outputs.alb_dns_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: terraform fmt
+        working-directory: infra
+        run: terraform fmt -check
+
+      - name: terraform init
+        working-directory: infra
+        run: terraform init -input=false
+
+      - name: terraform validate
+        working-directory: infra
+        run: terraform validate
+
+      - name: terraform plan
+        working-directory: infra
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Upload plan artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/tfplan
+
+      - name: terraform apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: infra
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Capture outputs
+        id: tf_outputs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: infra
+        run: |
+          {
+            echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)"
+            echo "ecs_cluster_name=$(terraform output -raw ecs_cluster_name)"
+            echo "ecs_service_name=$(terraform output -raw ecs_service_name)"
+            echo "task_definition_family=$(terraform output -raw task_definition_family)"
+            echo "s3_bucket_name=$(terraform output -raw s3_bucket_name)"
+            echo "alb_dns_name=$(terraform output -raw alb_dns_name)"
+          } >> "$GITHUB_OUTPUT"
+
+  build_push:
+    name: Build & Push Image
+    needs: terraform
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      image_uri: ${{ steps.image.outputs.image_uri }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        id: image
+        env:
+          ECR_URL: ${{ needs.terraform.outputs.ecr_repository_url }}
+          SHA:     ${{ github.sha }}
+        run: |
+          docker build -t "$ECR_URL:$SHA" -t "$ECR_URL:latest" .
+          docker push "$ECR_URL:$SHA"
+          docker push "$ECR_URL:latest"
+          echo "image_uri=$ECR_URL:$SHA" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to ECS
+    needs: [terraform, build_push]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Fetch current task definition
+        env:
+          TASK_FAMILY: ${{ needs.terraform.outputs.task_definition_family }}
+        run: |
+          aws ecs describe-task-definition --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition' \
+            | jq 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)' \
+            > td.json
+
+      - name: Render new task definition with updated image
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: td.json
+          container-name:  shopsmart
+          image:           ${{ needs.build_push.outputs.image_uri }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          cluster:         ${{ needs.terraform.outputs.ecs_cluster_name }}
+          service:         ${{ needs.terraform.outputs.ecs_service_name }}
+          wait-for-service-stability: true
+
+      - name: Smoke test ALB /api/health
+        env:
+          ALB_DNS: ${{ needs.terraform.outputs.alb_dns_name }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "http://$ALB_DNS/api/health"; then
+              echo
+              echo "OK"
+              exit 0
+            fi
+            echo "waiting for ALB... ($i/30)"
+            sleep 3
+          done
+          echo "ALB never became healthy"
+          exit 1
