@@ -8,9 +8,8 @@ ShopSmart's cloud infrastructure is managed with **Terraform** and targets **AWS
 
 ```
 infra/
-├── bootstrap/          One-time setup: creates the S3 bucket for Terraform state
 ├── versions.tf         Terraform + provider version pins
-├── backend.tf          Remote state config (S3, no DynamoDB lock)
+├── backend.tf          Remote state config (S3)
 ├── variables.tf        Input variable declarations
 ├── main.tf             AWS provider, random suffix, locals, IAM role selection
 ├── network.tf          Default VPC data source + security groups (ALB-SG, Service-SG)
@@ -113,30 +112,7 @@ These are read by the GitHub Actions pipeline after `terraform apply`:
 
 ## First-Time Setup
 
-### 1. Bootstrap Terraform state
-
-```bash
-cd infra/bootstrap
-# Edit main.tf if needed, then:
-terraform init
-terraform apply
-# Note the output bucket name
-```
-
-### 2. Configure backend
-
-Paste the bucket name into `infra/backend.tf`:
-```hcl
-terraform {
-  backend "s3" {
-    bucket = "<your-bootstrap-bucket-name>"
-    key    = "shopsmart/terraform.tfstate"
-    region = "us-east-1"
-  }
-}
-```
-
-### 3. Export AWS credentials
+### 1. Export AWS credentials
 
 ```bash
 export AWS_ACCESS_KEY_ID=...
@@ -145,7 +121,7 @@ export AWS_SESSION_TOKEN=...    # Required for AWS Academy
 export AWS_REGION=us-east-1
 ```
 
-### 4. Apply
+### 2. Apply
 
 ```bash
 cd infra
@@ -177,13 +153,6 @@ terraform destroy -var=use_lab_role=true
 ```
 
 ECR and S3 resources are configured with `force_delete`/`force_destroy = true`, so all images and objects are removed.
-
-To also destroy the state bucket:
-
-```bash
-cd infra/bootstrap
-terraform destroy
-```
 
 ---
 

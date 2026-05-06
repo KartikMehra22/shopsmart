@@ -44,8 +44,7 @@ shopsmart/
 ├── e2e/                      # Playwright end-to-end tests
 │   └── shopsmart.spec.js
 ├── infra/                    # Terraform (AWS ECS Fargate)
-│   ├── main.tf / network.tf / ecs.tf / alb.tf …
-│   └── bootstrap/            # One-time S3 state bucket setup
+│   └── main.tf / network.tf / ecs.tf / alb.tf …
 ├── docs/                     # This documentation
 │   └── lab-notes/            # Course helpers (not production)
 ├── .github/workflows/
@@ -118,7 +117,7 @@ Supporting resources
   ECR Repository   – Docker image registry
   S3 Bucket        – Application assets bucket
   IAM Roles        – ECS execution + task roles (or LabRole)
-  Terraform State  – S3 bucket (bootstrap/)
+  Terraform State  – S3 bucket
 ```
 
 ---

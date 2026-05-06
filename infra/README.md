@@ -7,10 +7,8 @@ the AWS infrastructure for ShopSmart on ECS Fargate.
 
 ```
 infra/
-├── bootstrap/   One-shot config that creates the tfstate S3 bucket.
-│                Run once locally before anything else.
 ├── versions.tf  Terraform + provider version pins.
-├── backend.tf   S3 backend (no DynamoDB lock).
+├── backend.tf   S3 backend.
 ├── variables.tf Input variables.
 ├── main.tf      AWS provider, random suffix, locals.
 ├── network.tf   Default VPC data + ALB/service SGs.
@@ -33,11 +31,7 @@ infra/
    export AWS_REGION=us-east-1
    ```
 
-2. Bootstrap the state bucket (see `bootstrap/README.md`).
-
-3. Paste the resulting bucket name into `backend.tf`.
-
-4. Initialize and apply:
+2. Initialize and apply:
 
    ```bash
    terraform init
@@ -73,9 +67,4 @@ terraform destroy
 ```
 
 ECR has `force_delete = true` and S3 has `force_destroy = true`, so this
-removes images and bucket contents along with the resources. The
-bootstrap state bucket must be destroyed separately:
-
-```bash
-cd bootstrap && terraform destroy
-```
+removes images and bucket contents along with the resources.

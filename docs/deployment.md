@@ -107,12 +107,11 @@ See [cicd.md](./cicd.md) for the full pipeline walkthrough and [infrastructure.m
 
 **Manual one-time setup:**
 
-1. Bootstrap Terraform state bucket (see [infrastructure.md](./infrastructure.md)).
-2. Add AWS credentials as GitHub repository secrets:
+1. Add AWS credentials as GitHub repository secrets:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `AWS_SESSION_TOKEN`
-3. Push to `main` — the pipeline will provision infrastructure, build and push the Docker image, and deploy to ECS.
+2. Push to `main` — the pipeline will provision infrastructure, build and push the Docker image, and deploy to ECS.
 
 ---
 
