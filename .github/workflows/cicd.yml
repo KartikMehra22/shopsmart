@@ -220,6 +220,23 @@ jobs:
           container-name:  shopsmart
           image:           ${{ needs.build_push.outputs.image_uri }}
 
+      - name: Ensure ECS service desired count >= 1
+        env:
+          CLUSTER: ${{ needs.terraform.outputs.ecs_cluster_name }}
+          SERVICE: ${{ needs.terraform.outputs.ecs_service_name }}
+        run: |
+          DESIRED=$(aws ecs describe-services \
+            --cluster "$CLUSTER" --services "$SERVICE" \
+            --query 'services[0].desiredCount' --output text)
+          if [ "$DESIRED" -lt 1 ]; then
+            echo "Service is at desired=$DESIRED — scaling to 1"
+            aws ecs update-service \
+              --cluster "$CLUSTER" --service "$SERVICE" \
+              --desired-count 1 --no-cli-pager >/dev/null
+          else
+            echo "Service is at desired=$DESIRED — no scale-up needed"
+          fi
+
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:

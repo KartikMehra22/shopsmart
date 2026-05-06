@@ -103,10 +103,11 @@ The pipeline runs four jobs in order:
 | `test` | Lint + unit tests + integration tests | ~1 min |
 | `terraform` | `init → validate → plan → apply` (no-op since infra already exists) | ~30 sec |
 | `build_push` | Build Docker image, push to ECR | ~1.5 min |
-| `deploy` | Register new task def, update ECS service, smoke test | ~1.5 min |
+| `deploy` | Scale service to 1 (if needed) → register new task def → update service → smoke test | ~1.5 min |
 
 **Things to point out during the demo:**
 - `build_push` log shows `docker push` → "uploaded" → ECR refills.
+- `deploy` log shows the **Ensure ECS service desired count >= 1** step scaling the service from 0 back to 1 (because the reset script left it at 0).
 - `deploy` log shows ECS rolling out the new task def.
 - Final smoke-test step: `curl http://<alb-dns>/api/health` returns `200`.
 

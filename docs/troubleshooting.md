@@ -278,7 +278,10 @@ terraform output
    - **"unused: target.NotInUse"** → ECS service has 0 desired tasks. Scale it up:
      ```bash
      aws ecs update-service --cluster shopsmart-cluster --service shopsmart-service --desired-count 1 --region us-east-1
+     aws ecs wait services-stable --cluster shopsmart-cluster --services shopsmart-service --region us-east-1
      ```
+
+> **Note:** As of the pipeline fix in `.github/workflows/cicd.yml` (step _Ensure ECS service desired count >= 1_), the deploy job now auto-scales the service back to 1 if it's at 0 — so this scenario should not happen during a normal pipeline run anymore. If you see it after a manual scale-down or after running the demo reset script, run the command above.
 
 ---
 
