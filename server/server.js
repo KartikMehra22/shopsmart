@@ -1,9 +1,26 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const PORT = 5001;
+const PORT = Number(process.env.PORT) || 5001;
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+if (allowedOrigins.length > 0) {
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      },
+      credentials: true,
+    })
+  );
+}
+
 app.use(express.json());
 
 const { PrismaClient } = require('@prisma/client');

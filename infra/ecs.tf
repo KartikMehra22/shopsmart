@@ -32,7 +32,8 @@ resource "aws_ecs_task_definition" "app" {
       ]
       environment = [
         { name = "DATABASE_URL", value = "file:/app/server/prisma/prod.db" },
-        { name = "NODE_ENV", value = "production" }
+        { name = "NODE_ENV", value = "production" },
+        { name = "PORT", value = tostring(var.container_port) }
       ]
       logConfiguration = {
         logDriver = "awslogs"
