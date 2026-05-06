@@ -138,13 +138,13 @@ jobs:
           path: infra/tfplan
 
       - name: terraform apply
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         working-directory: infra
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Capture outputs
         id: tf_outputs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         working-directory: infra
         run: |
           {
@@ -159,7 +159,7 @@ jobs:
   build_push:
     name: Build & Push Image
     needs: terraform
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       image_uri: ${{ steps.image.outputs.image_uri }}
@@ -190,7 +190,7 @@ jobs:
   deploy:
     name: Deploy to ECS
     needs: [terraform, build_push]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
